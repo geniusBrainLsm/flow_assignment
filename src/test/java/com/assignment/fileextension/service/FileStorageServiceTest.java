@@ -198,4 +198,36 @@ class FileStorageServiceTest {
         assertThat(result.get(0)).isEqualTo(mockUploadedFile);
         verify(uploadedFileRepository).findByExtension("pdf");
     }
+
+    @Test
+    @DisplayName("ID로 파일 조회 - 성공")
+    void findById_Success() {
+        // given
+        when(uploadedFileRepository.findById(1L))
+                .thenReturn(Optional.of(mockUploadedFile));
+
+        // when
+        UploadedFile result = fileStorageService.findById(1L);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(1L);
+        assertThat(result.getOriginalFilename()).isEqualTo("test.pdf");
+        verify(uploadedFileRepository).findById(1L);
+    }
+
+    @Test
+    @DisplayName("ID로 파일 조회 - 파일 없음")
+    void findById_NotFound() {
+        // given
+        when(uploadedFileRepository.findById(999L))
+                .thenReturn(Optional.empty());
+
+        // when
+        UploadedFile result = fileStorageService.findById(999L);
+
+        // then
+        assertThat(result).isNull();
+        verify(uploadedFileRepository).findById(999L);
+    }
 }

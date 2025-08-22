@@ -41,13 +41,7 @@ public class FileManagementController {
             @Parameter(description = "파일 ID", required = true)
             @PathVariable Long fileId) {
         
-        // 모든 상태의 파일에서 검색
-        List<UploadedFile> allFiles = getAllFilesFromAllStatuses();
-        
-        UploadedFile file = allFiles.stream()
-                .filter(f -> f.getId().equals(fileId))
-                .findFirst()
-                .orElse(null);
+        UploadedFile file = storageService.findById(fileId);
         
         if (file == null) {
             return ResponseEntity.notFound().build();
@@ -64,11 +58,7 @@ public class FileManagementController {
         
         try {
             // 파일 정보 조회
-            List<UploadedFile> allFiles = getAllFilesFromAllStatuses();
-            UploadedFile uploadedFile = allFiles.stream()
-                    .filter(f -> f.getId().equals(fileId))
-                    .findFirst()
-                    .orElse(null);
+            UploadedFile uploadedFile = storageService.findById(fileId);
             
             if (uploadedFile == null) {
                 return ResponseEntity.notFound().build();
@@ -95,15 +85,6 @@ public class FileManagementController {
         }
     }
     
-    /**
-     * 모든 상태의 파일 목록을 조회합니다.
-     */
-    private List<UploadedFile> getAllFilesFromAllStatuses() {
-        List<UploadedFile> allFiles = new java.util.ArrayList<>();
-        allFiles.addAll(storageService.getFilesByStatus(UploadedFile.FileStatus.ACTIVE));
-        allFiles.addAll(storageService.getFilesByStatus(UploadedFile.FileStatus.DELETED));
-        return allFiles;
-    }
     
     @Operation(summary = "상태별 파일 목록 조회", description = "파일 상태(ACTIVE, DELETED)별로 파일 목록을 조회")
     @GetMapping("/status/{status}")
@@ -124,12 +105,6 @@ public class FileManagementController {
     }
     
     
-    @Operation(summary = "활성 파일 목록 조회")
-    @GetMapping("/active")
-    public ResponseEntity<List<UploadedFile>> getActiveFiles() {
-        List<UploadedFile> files = storageService.getFilesByStatus(UploadedFile.FileStatus.ACTIVE);
-        return ResponseEntity.ok(files);
-    }
     
     @Operation(summary = "파일 삭제")
     @ApiResponses(value = {

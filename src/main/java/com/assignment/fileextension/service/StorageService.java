@@ -38,4 +38,9 @@ public interface StorageService {
      * 확장자별 파일 목록을 조회합니다.
      */
     List<UploadedFile> getFilesByExtension(String extension);
+    
+    /**
+     * ID로 파일을 조회합니다.
+     */
+    UploadedFile findById(Long fileId);
 }

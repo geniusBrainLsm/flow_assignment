@@ -2,11 +2,12 @@ package com.assignment.fileextension.service;
 
 import com.assignment.fileextension.dto.CustomExtensionDto;
 import com.assignment.fileextension.dto.ExtensionRequest;
-import com.assignment.fileextension.dto.FixedExtensionDto;
+import com.assignment.fileextension.dto.FixedExtensionSettingDto;
 import com.assignment.fileextension.entity.CustomExtension;
-import com.assignment.fileextension.entity.FixedExtension;
+import com.assignment.fileextension.entity.FixedExtensionSetting;
+import com.assignment.fileextension.exception.ExtensionNotFoundException;
 import com.assignment.fileextension.repository.CustomExtensionRepository;
-import com.assignment.fileextension.repository.FixedExtensionRepository;
+import com.assignment.fileextension.repository.FixedExtensionSettingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,10 @@ import static org.mockito.Mockito.*;
 class ExtensionServiceTest {
 
     @Mock
-    private FixedExtensionRepository fixedExtensionRepository;
+    private FixedExtensionSettingRepository fixedExtensionSettingRepository;
+
+    @Mock
+    private StorageService storageService;
 
     @Mock
     private CustomExtensionRepository customExtensionRepository;
@@ -36,12 +40,12 @@ class ExtensionServiceTest {
     @InjectMocks
     private ExtensionService extensionService;
 
-    private FixedExtension fixedExtension;
+    private FixedExtensionSetting fixedExtensionSetting;
     private CustomExtension customExtension;
 
     @BeforeEach
     void setUp() {
-        fixedExtension = FixedExtension.builder()
+        fixedExtensionSetting = FixedExtensionSetting.builder()
                 .id(1L)
                 .extension("exe")
                 .isBlocked(false)
@@ -55,13 +59,13 @@ class ExtensionServiceTest {
 
     @Test
     @DisplayName("모든 고정 확장자 조회")
-    void getAllFixedExtensions() {
+    void getAllFixedExtensionSettings() {
         // given
-        List<FixedExtension> extensions = Arrays.asList(fixedExtension);
-        when(fixedExtensionRepository.findAll()).thenReturn(extensions);
+        List<FixedExtensionSetting> extensions = Arrays.asList(fixedExtensionSetting);
+        when(fixedExtensionSettingRepository.findAllOrderByExtension()).thenReturn(extensions);
 
         // when
-        List<FixedExtensionDto> result = extensionService.getAllFixedExtensions();
+        List<FixedExtensionSettingDto> result = extensionService.getAllFixedExtensionSettings();
 
         // then
         assertThat(result).hasSize(1);
@@ -71,29 +75,28 @@ class ExtensionServiceTest {
 
     @Test
     @DisplayName("고정 확장자 차단 상태 업데이트 - 성공")
-    void updateFixedExtensionStatus_Success() {
+    void updateFixedExtensionSetting_Success() {
         // given
-        when(fixedExtensionRepository.findById(1L)).thenReturn(Optional.of(fixedExtension));
-        when(fixedExtensionRepository.save(any(FixedExtension.class))).thenReturn(fixedExtension);
+        when(fixedExtensionSettingRepository.findByExtension("exe")).thenReturn(Optional.of(fixedExtensionSetting));
+        when(fixedExtensionSettingRepository.save(any(FixedExtensionSetting.class))).thenReturn(fixedExtensionSetting);
 
         // when
-        FixedExtensionDto result = extensionService.updateFixedExtensionStatus(1L, true);
+        FixedExtensionSettingDto result = extensionService.updateFixedExtensionSetting("exe", true);
 
         // then
         assertThat(result.getIsBlocked()).isTrue();
-        verify(fixedExtensionRepository).save(any(FixedExtension.class));
+        verify(fixedExtensionSettingRepository).save(any(FixedExtensionSetting.class));
     }
 
     @Test
-    @DisplayName("고정 확장자 차단 상태 업데이트 - 존재하지 않는 ID")
-    void updateFixedExtensionStatus_NotFound() {
+    @DisplayName("고정 확장자 차단 상태 업데이트 - 존재하지 않는 확장자")
+    void updateFixedExtensionSetting_NotFound() {
         // given
-        when(fixedExtensionRepository.findById(1L)).thenReturn(Optional.empty());
+        when(fixedExtensionSettingRepository.findByExtension("nonexistent")).thenReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> extensionService.updateFixedExtensionStatus(1L, true))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("해당 확장자를 찾을 수 없습니다.");
+        assertThatThrownBy(() -> extensionService.updateFixedExtensionSetting("nonexistent", true))
+                .isInstanceOf(ExtensionNotFoundException.class);
     }
 
     @Test
@@ -159,7 +162,7 @@ class ExtensionServiceTest {
     @DisplayName("커스텀 확장자 삭제 - 성공")
     void deleteCustomExtension_Success() {
         // given
-        when(customExtensionRepository.existsById(1L)).thenReturn(true);
+        when(customExtensionRepository.findById(1L)).thenReturn(Optional.of(customExtension));
 
         // when
         extensionService.deleteCustomExtension(1L);
@@ -172,7 +175,7 @@ class ExtensionServiceTest {
     @DisplayName("커스텀 확장자 삭제 - 존재하지 않는 ID")
     void deleteCustomExtension_NotFound() {
         // given
-        when(customExtensionRepository.existsById(1L)).thenReturn(false);
+        when(customExtensionRepository.findById(1L)).thenReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> extensionService.deleteCustomExtension(1L))
@@ -184,7 +187,8 @@ class ExtensionServiceTest {
     @DisplayName("확장자 차단 여부 확인 - 고정 확장자 차단됨")
     void isExtensionBlocked_FixedBlocked() {
         // given
-        when(fixedExtensionRepository.findBlockedExtensions()).thenReturn(Arrays.asList("exe", "bat"));
+        when(fixedExtensionSettingRepository.findByExtension("exe")).thenReturn(Optional.of(
+                FixedExtensionSetting.builder().extension("exe").isBlocked(true).build()));
         when(customExtensionRepository.findAllExtensions()).thenReturn(Arrays.asList("zip"));
 
         // when
@@ -198,7 +202,7 @@ class ExtensionServiceTest {
     @DisplayName("확장자 차단 여부 확인 - 커스텀 확장자 차단됨")
     void isExtensionBlocked_CustomBlocked() {
         // given
-        when(fixedExtensionRepository.findBlockedExtensions()).thenReturn(Arrays.asList("exe"));
+        when(fixedExtensionSettingRepository.findByExtension("zip")).thenReturn(Optional.empty());
         when(customExtensionRepository.findAllExtensions()).thenReturn(Arrays.asList("zip", "rar"));
 
         // when
@@ -212,7 +216,7 @@ class ExtensionServiceTest {
     @DisplayName("확장자 차단 여부 확인 - 허용된 확장자")
     void isExtensionBlocked_Allowed() {
         // given
-        when(fixedExtensionRepository.findBlockedExtensions()).thenReturn(Arrays.asList("exe"));
+        when(fixedExtensionSettingRepository.findByExtension("txt")).thenReturn(Optional.empty());
         when(customExtensionRepository.findAllExtensions()).thenReturn(Arrays.asList("zip"));
 
         // when

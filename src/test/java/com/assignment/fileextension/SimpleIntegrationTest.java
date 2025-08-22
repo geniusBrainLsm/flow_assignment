@@ -48,7 +48,7 @@ class SimpleIntegrationTest {
     @DisplayName("고정 확장자 조회 테스트")
     void getAllFixedExtensions() {
         // when
-        var extensions = extensionService.getAllFixedExtensions();
+        var extensions = extensionService.getAllFixedExtensionSettings();
 
         // then
         assertThat(extensions).isNotEmpty();

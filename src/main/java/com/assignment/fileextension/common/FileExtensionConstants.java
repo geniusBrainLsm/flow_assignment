@@ -24,7 +24,7 @@ public final class FileExtensionConstants {
     public static final class FileLimit {
         public static final int MAX_CUSTOM_EXTENSIONS = 200;
         public static final int MAX_EXTENSION_NAME_LENGTH = 20;
-        public static final long MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024L; // 200MB
+        public static final long MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024L; // 100MB
         
         private FileLimit() {}
     }
@@ -34,7 +34,7 @@ public final class FileExtensionConstants {
      */
     public static final class Messages {
         public static final String FILE_BLOCKED = "차단된 확장자가 포함되어 있습니다";
-        public static final String FILE_TOO_LARGE = "파일 크기가 최대 허용 크기(200MB)를 초과했습니다";
+        public static final String FILE_TOO_LARGE = "파일 크기가 최대 허용 크기(100MB)를 초과했습니다";
         public static final String INVALID_FILENAME = "파일명이 올바르지 않습니다";
         public static final String EXTENSION_NOT_FOUND = "해당 확장자를 찾을 수 없습니다";
         public static final String EXTENSION_ALREADY_EXISTS = "이미 등록된 확장자입니다";

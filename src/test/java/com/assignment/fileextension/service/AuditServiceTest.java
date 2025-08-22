@@ -57,15 +57,13 @@ class AuditServiceTest {
         );
 
         mockRequest = new MockHttpServletRequest();
-        mockRequest.setRemoteAddr("192.168.1.100");
+        ((MockHttpServletRequest) mockRequest).setRemoteAddr("192.168.1.100");
         ((MockHttpServletRequest) mockRequest).addHeader("User-Agent", "Test Browser");
 
-        blockedResult = new FileValidationService.FileValidationResult(
-                false,
-                true,
+        blockedResult = FileValidationService.FileValidationResult.blocked(
                 "차단된 확장자입니다: exe",
-                "exe",
-                BlockReason.BLOCKED_EXTENSION
+                BlockReason.BLOCKED_EXTENSION,
+                "exe"
         );
 
         savedAuditLog = FileAuditLog.builder()

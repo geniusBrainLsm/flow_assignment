@@ -59,7 +59,7 @@ public class GlobalExceptionHandler {
         log.warn("파일 크기 초과: {}", e.getMessage());
         
         Map<String, Object> response = new HashMap<>();
-        response.put("error", "파일 크기가 최대 허용 크기(200MB)를 초과했습니다");
+        response.put("error", "파일 크기가 최대 허용 크기(100MB)를 초과했습니다");
         response.put("type", "FILE_SIZE_EXCEEDED");
         
         return ResponseEntity.badRequest().body(response);

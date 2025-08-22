@@ -175,7 +175,7 @@ class ExtensionControllerTest {
     @DisplayName("GET /api/extensions/check - 확장자 차단 여부 확인")
     void checkExtension() throws Exception {
         // given
-        when(extensionService.isExtensionBlocked(eq("malware.exe"), any())).thenReturn(true);
+        when(extensionService.isExtensionBlocked("malware.exe")).thenReturn(true);
 
         // when & then
         mockMvc.perform(get("/api/extensions/check")
@@ -188,7 +188,7 @@ class ExtensionControllerTest {
     @DisplayName("GET /api/extensions/check - 허용된 파일")
     void checkExtension_Allowed() throws Exception {
         // given
-        when(extensionService.isExtensionBlocked(eq("document.txt"), any())).thenReturn(false);
+        when(extensionService.isExtensionBlocked("document.txt")).thenReturn(false);
 
         // when & then
         mockMvc.perform(get("/api/extensions/check")

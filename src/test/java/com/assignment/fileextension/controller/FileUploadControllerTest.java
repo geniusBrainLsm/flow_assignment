@@ -57,7 +57,7 @@ class FileUploadControllerTest {
 
         UploadedFile uploadedFile = UploadedFile.builder()
                 .id(1L)
-                .originalFileName("test.pdf")
+                .originalFilename("test.pdf")
                 .fileSize(12L)
                 .filePath("/uploads/test.pdf")
                 .build();

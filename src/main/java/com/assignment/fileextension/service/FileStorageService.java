@@ -130,6 +130,12 @@ public class FileStorageService implements StorageService {
     }
     
     @Override
+    @Transactional(readOnly = true)
+    public UploadedFile findById(Long fileId) {
+        return uploadedFileRepository.findById(fileId).orElse(null);
+    }
+    
+    @Override
     public void deletePhysicalFile(Long fileId) throws IOException {
         UploadedFile file = uploadedFileRepository.findById(fileId)
                 .orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다."));
@@ -159,11 +165,6 @@ public class FileStorageService implements StorageService {
                 deletionException ? "삭제 예외 적용" : "일반 파일");
     }
     
-    public void permanentDeleteFile(Long fileId) throws IOException {
-        deletePhysicalFile(fileId);
-        uploadedFileRepository.deleteById(fileId);
-        log.info("파일 완전 삭제: ID {}", fileId);
-    }
     
     private void validateFile(MultipartFile file) {
         if (file.isEmpty()) {

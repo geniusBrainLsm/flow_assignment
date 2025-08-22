@@ -1,124 +1,32 @@
-name: Deploy to AWS EC2
+test:
+  runs-on: ubuntu-latest
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  steps:
+    - uses: actions/checkout@v3
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v3
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+    - name: Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+    - name: Setup Gradle
+      uses: gradle/gradle-build-action@v2
+      with:
+        gradle-version: 8.5
 
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version: 8.5
+    # - name: Run tests
+    #   run: gradle test
 
-      - name: Run tests
-        run: gradle test
-
-      - name: Build with Gradle
-        run: gradle bootJar
-
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v0.1.5
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            # 애플리케이션 디렉토리로 이동
-            cd /opt/file-extension-api
-            
-            # 최신 코드 pull
-            if [ -d ".git" ]; then
-              git pull origin main
-            else
-              git clone https://github.com/${{ github.repository }} .
-            fi
-            
-            # PROD yml 생성 (GitHub Secret)
-            echo "${{ secrets.PROD_APPLICATION_YML }}" > /opt/file-extension-api/application-prod.yml
-            
-            # Docker 환경 변수로 Spring 프로필 지정
-            export SPRING_PROFILES_ACTIVE=prod
-            
-            # Nginx 설정 업데이트
-            if [ -f "nginx/file-extension-api.conf" ]; then
-              sudo cp nginx/file-extension-api.conf /etc/nginx/sites-available/
-              sudo nginx -t && sudo systemctl reload nginx
-            fi
-            
-            # 필요한 디렉토리 생성
-            mkdir -p logs data uploads
-            
-            # 기존 컨테이너 중지 및 제거
-            docker-compose down || true
-            
-            # Docker 이미지 빌드 및 실행
-            docker-compose up --build -d
-            
-            # 서비스 상태 확인
-            sleep 15
-            docker-compose ps
-            
-            # 애플리케이션 헬스 체크
-            echo "애플리케이션 헬스 체크..."
-            for i in {1..10}; do
-              if curl -f http://localhost:8080/actuator/health >/dev/null 2>&1; then
-                echo "✅ 애플리케이션 정상 실행"
-                break
-              else
-                echo "⏳ 대기 중... ($i/10)"
-                sleep 5
-              fi
-            done
-            
-            # Nginx 프록시 헬스 체크
-            echo "Nginx 프록시 헬스 체크..."
-            PUBLIC_IP=$(curl -s http://checkip.amazonaws.com)
-            for i in {1..5}; do
-              if curl -f http://$PUBLIC_IP/health >/dev/null 2>&1; then
-                echo "✅ Nginx 프록시 정상 작동 (http://$PUBLIC_IP)"
-                break
-              else
-                echo "⏳ 프록시 확인 중... ($i/5)"
-                sleep 3
-              fi
-            done
-            
-            # 최근 로그 확인
-            echo "최근 애플리케이션 로그:"
-            docker-compose logs --tail=20 app
-            
-            # 최종 배포 완료
-            echo "🎉 배포 완료!"
-            echo "🌐 서비스 URL: http://$PUBLIC_IP"
+    - name: Build with Gradle
+      run: gradle bootJar

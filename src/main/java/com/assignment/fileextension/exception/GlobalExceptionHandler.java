@@ -3,9 +3,11 @@ package com.assignment.fileextension.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.validation.FieldError;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -75,6 +77,24 @@ public class GlobalExceptionHandler {
         Map<String, Object> response = new HashMap<>();
         response.put("error", e.getMessage());
         response.put("type", "INVALID_ARGUMENT");
+        
+        return ResponseEntity.badRequest().body(response);
+    }
+    
+    /**
+     * Bean Validation 예외 처리
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException e) {
+        log.warn("입력 값 검증 실패: {}", e.getMessage());
+        
+        Map<String, Object> response = new HashMap<>();
+        
+        // 첫 번째 필드 오류를 가져옴
+        FieldError fieldError = e.getBindingResult().getFieldErrors().get(0);
+        response.put("error", fieldError.getDefaultMessage());
+        response.put("type", "VALIDATION_ERROR");
+        response.put("field", fieldError.getField());
         
         return ResponseEntity.badRequest().body(response);
     }

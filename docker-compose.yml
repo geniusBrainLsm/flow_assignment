@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"  # localhost에서만 접근 가능
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_FORWARD_HEADERS_STRATEGY=framework
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./application-prod.yml:/app/application-prod.yml  # Secret으로 생성한 yml 마운트
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

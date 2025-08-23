@@ -67,9 +67,19 @@ jobs:
               git clone https://github.com/${{ github.repository }} .
             fi
             
-            # 환경변수를 한 번에 설정 (GitHub Secret의 PROD_APPLICATION_YML 사용)
-            echo "${{ secrets.PROD_APPLICATION_YML }}" > .env
-            source .env
+            # 환경변수를 직접 export (특수문자 처리)
+            export SPRING_PROFILES_ACTIVE=prod
+            export SERVER_ADDRESS=0.0.0.0
+            export SERVER_PORT=8080
+            export SPRING_DATASOURCE_URL="${{ secrets.RDS_URL }}"
+            export SPRING_DATASOURCE_USERNAME="${{ secrets.RDS_USERNAME }}"
+            export SPRING_DATASOURCE_PASSWORD="${{ secrets.RDS_PASSWORD }}"
+            export SPRING_JPA_HIBERNATE_DDL_AUTO=update
+            export SPRING_JPA_SHOW_SQL=false
+            export APP_FILE_UPLOAD_DIR=/opt/uploads
+            export APP_FILE_MAX_SIZE=104857600
+            export LOGGING_LEVEL_ROOT=INFO
+            export LOGGING_FILE_NAME=/opt/logs/file-extension-api.log
             
             # Nginx 설정 업데이트
             if [ -f "nginx/file-extension-api.conf" ]; then

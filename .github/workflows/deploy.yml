@@ -56,6 +56,20 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          # GitHub Secrets에 등록된 데이터베이스 관련 환경 변수를 SSH 세션에 주입합니다.
+          env:
+            RDS_URL: ${{ secrets.RDS_URL }}
+            RDS_USERNAME: ${{ secrets.RDS_USERNAME }}
+            RDS_PASSWORD: ${{ secrets.RDS_PASSWORD }}
+            SPRING_PROFILES_ACTIVE: prod # 프로필 고정
+            SERVER_ADDRESS: 0.0.0.0 # 서버 주소 고정
+            SERVER_PORT: 8080 # 서버 포트 고정
+            SPRING_JPA_HIBERNATE_DDL_AUTO: update # JPA DDL 설정 고정
+            SPRING_JPA_SHOW_SQL: false # SQL 출력 설정 고정
+            APP_FILE_UPLOAD_DIR: /opt/uploads # 파일 업로드 디렉토리 고정
+            APP_FILE_MAX_SIZE: 104857600 # 최대 파일 크기 고정
+            LOGGING_LEVEL_ROOT: INFO # 로깅 레벨 고정
+            LOGGING_FILE_NAME: /opt/logs/file-extension-api.log # 로깅 파일 이름 고정
           script: |
             # 애플리케이션 디렉토리로 이동
             cd /opt/file-extension-api
@@ -67,19 +81,8 @@ jobs:
               git clone https://github.com/${{ github.repository }} .
             fi
             
-            # 환경변수를 직접 export (특수문자 처리)
-            export SPRING_PROFILES_ACTIVE=prod
-            export SERVER_ADDRESS=0.0.0.0
-            export SERVER_PORT=8080
-            export SPRING_DATASOURCE_URL="${{ secrets.RDS_URL }}"
-            export SPRING_DATASOURCE_USERNAME="${{ secrets.RDS_USERNAME }}"
-            export SPRING_DATASOURCE_PASSWORD="${{ secrets.RDS_PASSWORD }}"
-            export SPRING_JPA_HIBERNATE_DDL_AUTO=update
-            export SPRING_JPA_SHOW_SQL=false
-            export APP_FILE_UPLOAD_DIR=/opt/uploads
-            export APP_FILE_MAX_SIZE=104857600
-            export LOGGING_LEVEL_ROOT=INFO
-            export LOGGING_FILE_NAME=/opt/logs/file-extension-api.log
+            # 환경변수는 appleboy/ssh-action의 'env' 파라미터로 이미 주입되었으므로,
+            # 여기서는 별도로 export 할 필요가 없습니다. Docker Compose가 이 환경 변수들을 사용합니다.
             
             # Nginx 설정 업데이트
             if [ -f "nginx/file-extension-api.conf" ]; then
@@ -94,6 +97,7 @@ jobs:
             docker-compose down || true
             
             # Docker 이미지 빌드 및 실행
+            # ssh-action의 'env' 파라미터로 주입된 환경변수들이 docker-compose up 명령에 자동으로 전달됩니다.
             docker-compose up --build -d
             
             # 서비스 상태 확인
@@ -125,7 +129,7 @@ jobs:
               fi
             done
             
-            # 최근 로그 확인
+            # 최근 애플리케이션 로그 확인
             echo "최근 애플리케이션 로그:"
             docker-compose logs --tail=20 app
             

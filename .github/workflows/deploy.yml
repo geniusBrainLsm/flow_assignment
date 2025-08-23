@@ -67,8 +67,34 @@ jobs:
               git clone https://github.com/${{ github.repository }} .
             fi
             
-            # 환경변수는 이 스크립트의 실행 환경에 이미 주입되었으므로 별도로 export 할 필요가 없습니다.
-            # Docker Compose가 이 환경 변수들을 사용합니다.
+            # RDS 환경변수 설정
+            export RDS_URL="${{ secrets.RDS_URL }}"
+            export RDS_USERNAME="${{ secrets.RDS_USERNAME }}"
+            export RDS_PASSWORD="${{ secrets.RDS_PASSWORD }}"
+            export SPRING_PROFILES_ACTIVE="prod"
+            export SERVER_ADDRESS="0.0.0.0"
+            export SERVER_PORT="8080"
+            export SPRING_JPA_HIBERNATE_DDL_AUTO="update"
+            export SPRING_JPA_SHOW_SQL="false"
+            export APP_FILE_UPLOAD_DIR="/opt/uploads"
+            export APP_FILE_MAX_SIZE="104857600"
+            export LOGGING_LEVEL_ROOT="INFO"
+            export LOGGING_FILE_NAME="/opt/logs/file-extension-api.log"
+            export LOGGING_LEVEL_COM_ASSIGNMENT_FILEEXTENSION="INFO"
+            export LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB="WARN"
+            export APP_STORAGE_TYPE="local"
+            
+            # application-prod.yml 파일 생성 (GitHub Secret에서)
+            echo "application-prod.yml 파일 생성 중..."
+            cat > src/main/resources/application-prod.yml << 'EOL'
+            ${{ secrets.PROD_APPLICATION_YML }}
+            EOL
+            
+            # 환경변수 설정 확인
+            echo "환경변수 설정 확인:"
+            echo "RDS_URL: ${RDS_URL:0:20}..."
+            echo "RDS_USERNAME: $RDS_USERNAME"
+            echo "SPRING_PROFILES_ACTIVE: $SPRING_PROFILES_ACTIVE"
             
             # Nginx 설정 업데이트
             if [ -f "nginx/file-extension-api.conf" ]; then
@@ -126,16 +152,3 @@ jobs:
             echo "  - 확장자 목록: http://$PUBLIC_IP:8080/api/extensions"
             echo "  - 파일 업로드: http://$PUBLIC_IP:8080/api/upload/file"
             echo "  - 파일 검증: http://$PUBLIC_IP:8080/api/upload/check"
-        env: # env 블록은 with 블록과 동일한 레벨에 위치해야 합니다.
-          RDS_URL: ${{ secrets.RDS_URL }}
-          RDS_USERNAME: ${{ secrets.RDS_USERNAME }}
-          RDS_PASSWORD: ${{ secrets.RDS_PASSWORD }}
-          SPRING_PROFILES_ACTIVE: prod
-          SERVER_ADDRESS: 0.0.0.0
-          SERVER_PORT: 8080
-          SPRING_JPA_HIBERNATE_DDL_AUTO: update
-          SPRING_JPA_SHOW_SQL: false
-          APP_FILE_UPLOAD_DIR: /opt/uploads
-          APP_FILE_MAX_SIZE: 104857600
-          LOGGING_LEVEL_ROOT: INFO
-          LOGGING_FILE_NAME: /opt/logs/file-extension-api.log

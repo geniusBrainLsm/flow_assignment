@@ -3,19 +3,28 @@ version: '3.8'
 services:
   app:
     build: .
+    container_name: fileextension-app-prod
     ports:
-      - "127.0.0.1:8080:8080"  # localhost에서만 접근 가능
+      - "8080:8080"  # 모든 인터페이스에서 접근 가능
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - SERVER_FORWARD_HEADERS_STRATEGY=framework
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - SERVER_ADDRESS=${SERVER_ADDRESS:-0.0.0.0}
+      - SERVER_PORT=${SERVER_PORT:-8080}
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+      - SPRING_JPA_SHOW_SQL=${SPRING_JPA_SHOW_SQL:-false}
+      - APP_FILE_UPLOAD_DIR=${APP_FILE_UPLOAD_DIR:-/opt/uploads}
+      - APP_FILE_MAX_SIZE=${APP_FILE_MAX_SIZE:-104857600}
+      - LOGGING_LEVEL_ROOT=${LOGGING_LEVEL_ROOT:-INFO}
+      - LOGGING_FILE_NAME=${LOGGING_FILE_NAME:-/opt/logs/file-extension-api.log}
     volumes:
-      - ./uploads:/app/uploads
-      - ./logs:/app/logs
-      - ./data:/app/data
-      - ./application-prod.yml:/app/application-prod.yml  # Secret으로 생성한 yml 마운트
-    restart: unless-stopped
+      - /opt/uploads:/opt/uploads
+      - /opt/logs:/opt/logs
     networks:
       - app-network
+    restart: unless-stopped
 
 networks:
   app-network:

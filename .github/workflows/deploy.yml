@@ -67,11 +67,9 @@ jobs:
               git clone https://github.com/${{ github.repository }} .
             fi
             
-            # PROD yml 생성 (GitHub Secret)
-            echo "${{ secrets.PROD_APPLICATION_YML }}" > /opt/file-extension-api/application-prod.yml
-            
-            # Docker 환경 변수로 Spring 프로필 지정
-            export SPRING_PROFILES_ACTIVE=prod
+            # 환경변수를 한 번에 설정 (GitHub Secret의 PROD_APPLICATION_YML 사용)
+            echo "${{ secrets.PROD_APPLICATION_YML }}" > .env
+            source .env
             
             # Nginx 설정 업데이트
             if [ -f "nginx/file-extension-api.conf" ]; then
@@ -95,7 +93,7 @@ jobs:
             # 애플리케이션 헬스 체크
             echo "애플리케이션 헬스 체크..."
             for i in {1..10}; do
-              if curl -f http://localhost:8080/actuator/health >/dev/null 2>&1; then
+              if curl -f http://localhost:8080/api/extensions >/dev/null 2>&1; then
                 echo "✅ 애플리케이션 정상 실행"
                 break
               else
@@ -104,15 +102,15 @@ jobs:
               fi
             done
             
-            # Nginx 프록시 헬스 체크
-            echo "Nginx 프록시 헬스 체크..."
+            # 퍼블릭 IP로 직접 접근 테스트
+            echo "퍼블릭 IP 접근 테스트..."
             PUBLIC_IP=$(curl -s http://checkip.amazonaws.com)
             for i in {1..5}; do
-              if curl -f http://$PUBLIC_IP/health >/dev/null 2>&1; then
-                echo "✅ Nginx 프록시 정상 작동 (http://$PUBLIC_IP)"
+              if curl -f http://$PUBLIC_IP:8080/api/extensions >/dev/null 2>&1; then
+                echo "✅ 퍼블릭 IP 접근 정상 (http://$PUBLIC_IP:8080)"
                 break
               else
-                echo "⏳ 프록시 확인 중... ($i/5)"
+                echo "⏳ 퍼블릭 IP 접근 확인 중... ($i/5)"
                 sleep 3
               fi
             done
@@ -123,4 +121,8 @@ jobs:
             
             # 최종 배포 완료
             echo "🎉 배포 완료!"
-            echo "🌐 서비스 URL: http://$PUBLIC_IP"
+            echo "🌐 서비스 URL: http://$PUBLIC_IP:8080"
+            echo "📋 API 엔드포인트:"
+            echo "  - 확장자 목록: http://$PUBLIC_IP:8080/api/extensions"
+            echo "  - 파일 업로드: http://$PUBLIC_IP:8080/api/upload/file"
+            echo "  - 파일 검증: http://$PUBLIC_IP:8080/api/upload/check"
